@@ -1,20 +1,22 @@
 import { useState, useRef } from "react";
 import Header from "./Header";
-import { Link, useNavigate } from "react-router-dom";
 import { checkValidData } from "../utils/validate";
 import { auth } from "../utils/firebase";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   updateProfile,
 } from "firebase/auth";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
+import { GOOGLE_LOGO, NETFLIX_BG_IMAGE, USER_AVATAR } from "../utils/constants";
 
 const Login = () => {
   const [isSignInForm, setIsSignInForm] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const name = useRef(null);
@@ -22,7 +24,6 @@ const Login = () => {
   const password = useRef(null);
 
   const handleButtonClick = () => {
-    // validate the form data
     const message = checkValidData(email.current.value, password.current.value);
     setErrorMessage(message);
 
@@ -40,8 +41,7 @@ const Login = () => {
           const user = userCredential.user;
           updateProfile(user, {
             displayName: name.current.value,
-            photoURL:
-              "https://avatars.githubusercontent.com/u/79454198?s=400&u=1cd04fbb3cf8354e5e9a94ba47952a31ac38ac0f&v=4",
+            photoURL: USER_AVATAR,
           })
             .then(() => {
               const { uid, email, displayName, photoURL } = auth.currentUser;
@@ -53,15 +53,10 @@ const Login = () => {
                   photoURL: photoURL,
                 })
               );
-              navigate("browse");
             })
             .catch((error) => {
-              // An error occurred
               setErrorMessage(error);
             });
-          console.log(user);
-
-          // ...
         })
         .catch((error) => {
           const errorCode = error.code;
@@ -78,10 +73,8 @@ const Login = () => {
         password.current.value
       )
         .then((userCredential) => {
-          // Signed in
           // eslint-disable-next-line
           const user = userCredential.user;
-          navigate("/Browse");
           // ...
         })
         .catch((error) => {
@@ -96,12 +89,75 @@ const Login = () => {
     setIsSignInForm(!isSignInForm);
   };
 
+  // Forgot Button Logic
+
+  const handleForgotButtonClick = () => {
+    sendPasswordResetEmail(auth, email.current.value)
+      .then(() => {
+        console.log(email.current.value);
+        alert("Password rest link send to your email id");
+        // Password reset email sent!
+        // ..
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        setErrorMessage(errorCode + "+" + errorMessage);
+        // ..
+      });
+  };
+
+  // Sign In with Google
+
+  const handleGoogleSignInButtonClick = () => {
+    const provider = new GoogleAuthProvider();
+
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        // This gives you a Google Access Token. You can use it to access the Google API.
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        // eslint-disable-next-line
+        const token = credential.accessToken;
+        const user = result.user;
+
+        updateProfile(user, {
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        })
+          .then(() => {
+            const { uid, email, displayName, photoURL } = auth.currentUser;
+            dispatch(
+              addUser({
+                uid: uid,
+                email: email,
+                displayName: displayName,
+                photoURL: photoURL,
+              })
+            );
+          })
+          .catch((error) => {
+            setErrorMessage(error);
+          });
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        const email = error.customData.email;
+        const credential = GoogleAuthProvider.credentialFromError(error);
+
+        setErrorMessage(
+          errorCode + "-" + errorMessage + "-" + email + "-" + credential
+        );
+        // ...
+      });
+  };
+
   return (
     <div>
       <Header />
       <div className="absolute w-full">
         <img
-          src="https://assets.nflxext.com/ffe/siteui/vlv3/98df3030-1c2b-4bd1-a2f5-13c611857edb/web/IN-en-20250331-TRIFECTA-perspective_247b6f06-c36d-4dff-a8eb-4013325c3f8e_large.jpg"
+          src={NETFLIX_BG_IMAGE}
           alt="bg-img"
           className="max-w-fit bg-gradient-to-t from-black bg-opacity-40"
         />
@@ -128,7 +184,7 @@ const Login = () => {
         <input
           ref={email}
           type="text"
-          placeholder="Email or mobile number"
+          placeholder="Email ID"
           className="p-4 my-2 w-full rounded-md bg-black bg-opacity-80 border-[1px]
         
           "
@@ -143,7 +199,7 @@ const Login = () => {
         <p className="text-red-500 font-bold text-lg py-2">{errorMessage}</p>
 
         <button
-          className="w-full p-2 my-4 bg-red-600 rounded-md"
+          className="w-full p-2 my-4 bg-red-600 rounded-md text-md"
           onClick={handleButtonClick}
         >
           {isSignInForm ? "Sign In " : "Sign Up"}
@@ -152,19 +208,30 @@ const Login = () => {
         {isSignInForm && <h2 className="text-center">OR</h2>}
 
         {isSignInForm && (
-          <button className="w-full p-2 my-4 bg-gray-600 rounded-md bg-opacity-70">
-            Use a sign-in code
+          <button
+            className="w-full my-4 bg-neutral-800 p-2 rounded-md"
+            onClick={handleGoogleSignInButtonClick}
+          >
+            <div className="flex items-center justify-center text-md">
+              <img alt="googleLogo" src={GOOGLE_LOGO} className="w-10 px-2" />
+              <p>Sign in with Google</p>
+            </div>
           </button>
         )}
         {isSignInForm && (
           <div className="text-center">
-            <p className="underline">Forgot password?</p>
+            <button className="underline" onClick={handleForgotButtonClick}>
+              Forgot password?
+            </button>
           </div>
         )}
 
         {isSignInForm && (
-          <div className="flex my-4">
-            <input type="checkbox" />
+          <div className="flex my-4 items-center">
+            <input
+              type="checkbox"
+              className="w-4 h-4 bg-gray-100 border-gray-300"
+            />
             <p className="pl-2">Remember me</p>
           </div>
         )}
@@ -180,7 +247,7 @@ const Login = () => {
           This page is protected by Google reCAPTCHA to
         </p>
         <p className="text-xs text-gray-400">ensure you're not a bot.</p>
-        <Link className="my-2 underline text-blue-700">Learn more.</Link>
+        <p className="my-2 underline text-blue-700">Learn more.</p>
       </form>
     </div>
   );
