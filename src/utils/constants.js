@@ -9,3 +9,12 @@ export const NETFLIX_BG_IMAGE =
 
 export const GOOGLE_LOGO =
   "https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw";
+
+export const API_OPTIONS = {
+  method: "GET",
+  headers: {
+    accept: "application/json",
+    Authorization:
+      "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMWI4YmM2MjY2ZjIyYzZjNGM5NzBlYzRiMTYwOTkyYyIsIm5iZiI6MTc0NjYwMzE0MS4yNTksInN1YiI6IjY4MWIwYzg1YmY5NTYxNzY5NzlmMDNlZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.SYXCu2G6Evc-M1vY1pCGaLQ2ATvRUXRd-4MRzkKkKTM",
+  },
+};
